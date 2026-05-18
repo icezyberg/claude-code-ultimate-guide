@@ -30,6 +30,7 @@ jobs:
             --root-dir "$(pwd)"
             --exclude "^mailto:"
             --exclude "^#"
+            --exclude "^file://"
             --exclude "^https://twitter\\.com"
             --exclude "^https://x\\.com"
             --exclude "^https://linkedin\\.com"
