@@ -3,8 +3,8 @@
 # Source: guide/ultimate-guide.md
 # Purpose: Condensed index for LLMs to quickly answer user questions about Claude Code
 
-version: "3.40.0"
-updated: "2026-05-03"
+version: "3.41.0"
+updated: "2026-05-18"
 
 # ════════════════════════════════════════════════════════════════
 # DEEP DIVE - Line numbers in guide/ultimate-guide.md
@@ -28,12 +28,20 @@ deep_dive:
   # Claude Code Releases
   claude_code_releases: "guide/core/claude-code-releases.md"
   claude_code_releases_yaml: "machine-readable/claude-code-releases.yaml"
+  # CC 2.1.3: Skills-Commands Merger
+  skills_commands_merger_version: "2.1.3"
+  skills_commands_merger_date: "2026-01-11"
+  skills_commands_merger_summary: ".claude/commands/ merged into .claude/skills/. Add disable-model-invocation: true for user-only skills."
+  skills_commands_merger_docs: "https://code.claude.com/docs/en/skills"
+  skills_commands_merger_guide: "guide/ultimate-guide.md:8903"
   # Code Review Automation (Pat Cullen, Jan 2026)
   review_pr_advanced: "examples/commands/review-pr.md:81"
+  review_pr_advanced_note: "Since CC 2.1.3: equivalent skill uses disable-model-invocation: true in .claude/skills/"
   review_anti_hallucination: "examples/agents/code-reviewer.md:77"
   review_auto_fix_loop: "guide/workflows/iterative-refinement.md:353"
   # Review Plan Command (Garry Tan-inspired, Feb 2026)
   review_plan_command: "examples/commands/review-plan.md"
+  review_plan_command_note: "Since CC 2.1.3: equivalent skill uses disable-model-invocation: true in .claude/skills/"
   # GitHub Actions: Prompt-Based Code Review (Feb 2026)
   github_actions_code_review_workflow: "examples/github-actions/claude-code-review.yml"
   github_actions_code_review_prompt: "examples/github-actions/prompts/code-review.md"
@@ -53,6 +61,7 @@ deep_dive:
   adversarial_plan_review: "examples/agents/plan-challenger.md"  # Pattern #5: +52.8% security, +80% bug detection
   adr_auto_generation: "examples/agents/adr-writer.md"           # Pattern #3: criticality matrix C1/C2/C3
   codebase_audit_scoring: "examples/commands/audit-codebase.md"  # Pattern #9: 7-category scoring (Variant Systems)
+  codebase_audit_scoring_note: "Since CC 2.1.3: equivalent skill uses disable-model-invocation: true in .claude/skills/"
   event_driven_agents: "guide/workflows/event-driven-agents.md"  # Pattern #8: Linear/GitHub/Jira webhook→agent
   worktree_dependency_management: "guide/ultimate-guide.md:15180"  # Pattern #6: manual analysis, no auto-detection
   deployment_automation: "guide/ultimate-guide.md:13172"          # Pattern #10: Vercel + Infisical guardrails
@@ -1381,9 +1390,8 @@ folder_structure:
   settings.json: "hooks config (committed)"
   settings.local.json: "permissions (not committed)"
   agents/: "custom AI personas"
-  commands/: "slash commands"
+  skills/: "user-invocable skills in .claude/skills/ (slash commands + knowledge modules; since CC 2.1.3 commands/ merged here — use disable-model-invocation: true for user-only skills)"
   hooks/: "event scripts"
-  skills/: "knowledge modules"
   rules/: "auto-loaded rules"
 
 # ════════════════════════════════════════════════════════════════
