@@ -519,9 +519,9 @@ curl -sL https://raw.githubusercontent.com/FlorianBruniaux/claude-code-ultimate-
   > ~/.claude/skills/audit-agents-skills/SKILL.md
 
 # security-check (Dimension 5 — scans against threat-db, 55 CVEs, 24 techniques)
-mkdir -p ~/.claude/commands
-curl -sL https://raw.githubusercontent.com/FlorianBruniaux/claude-code-ultimate-guide/main/examples/commands/security-check.md \
-  > ~/.claude/commands/security-check.md
+mkdir -p ~/.claude/skills/security-check
+curl -sL https://raw.githubusercontent.com/FlorianBruniaux/claude-code-ultimate-guide/main/examples/skills/security-check/SKILL.md \
+  > ~/.claude/skills/security-check/security-check.md
 
 # Alternative for Dimension 1 — context-evaluator.ai
 # Zero-install LLM-native audit: 17 AI evaluators for CLAUDE.md/AGENTS.md,
@@ -602,7 +602,7 @@ Top 3 Critical Gaps:
 | **PreToolUse** | Hook that fires BEFORE Claude executes a tool — used for security checks and approval gates |
 | **effort: field** | Skill frontmatter for low/medium/high complexity signal — used by Claude to allocate thinking budget |
 | **argument-hint** | Frontmatter field showing placeholder text in slash command menu for commands using `$ARGUMENTS` |
-| **Threat Database** | `examples/commands/resources/threat-db.yaml` — 55 CVEs, 24 attack techniques, minimum safe versions |
+| **Threat Database** | `examples/skills/update-threat-db/threat-db.yaml` — 55 CVEs, 24 attack techniques, minimum safe versions |
 | **Cache Bug #40524** | Bug 2 (HIGH): `--resume` causes full context re-announcement (87-118K tokens rebuilt per resume) |
 | **Scope Drift** | When a PR changes files outside the stated plan intent. Detected by comparing `~/.claude/plans/` vs `git diff --stat` |
 | **Fix-First Heuristic** | Review pattern: auto-fix mechanical issues, ask for judgment calls on security/design decisions |
@@ -680,7 +680,7 @@ Top 3 Critical Gaps:
 | `/eval-rules` | Rules Hygiene | Same pattern |
 | `/eval-skills` | Skills Quality | Same pattern |
 | `/audit-agents-skills` | Agents/Commands | Same pattern |
-| `/security-check` | Security Posture (quick, ~30s) | `mkdir -p ~/.claude/commands && curl -sL ...` |
+| `/security-check` | Security Posture (quick, ~30s) | `mkdir -p ~/.claude/skills/security-check && curl -sL ...` |
 | `/security-audit` | Security Posture (full, 2-5 min, scored /100) | Same pattern |
 | [`tools/context-audit-prompt.md`](context-audit-prompt.md) | Deep-dive on context engineering | Self-contained prompt, no install needed |
 | [`tools/onboarding-prompt.md`](onboarding-prompt.md) | Setup from scratch | Self-contained prompt, no install needed |
