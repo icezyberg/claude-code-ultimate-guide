@@ -3074,6 +3074,8 @@ With `sonnetplan`, `/model opusplan` routes:
 
 > **Caveat**: The model's self-report (`what model are you?`) is unreliable — models don't always know their own identity. Trust the status bar (`Model: Sonnet 4.6` in plan mode) or verify via billing dashboard. GitHub issue [#9749](https://github.com/anthropics/claude-code/issues/9749) tracks native support.
 
+<a id="pinning-opus-46-community-hack"></a>
+
 **Pinning Opus 4.6 (Community Hack)**
 
 Opus 4.7 ships with a new tokenizer that maps the same input to roughly 1.0-1.35x more tokens depending on content type, and at higher effort levels it produces more output tokens (more reasoning steps). For workflows where that extra spend doesn't translate into better results, pinning to Opus 4.6 cuts cost without changing behavior.
@@ -12092,22 +12094,30 @@ Run this before starting any refactor touching a function used in 3+ places — 
 
 ### claude-mem (Automatic Session Memory)
 
-**Purpose**: Automatic persistent memory across Claude Code sessions through AI-compressed capture of tool usage and observations.
+**Purpose**: Automatic persistent memory across Claude Code sessions via AI-compressed capture of tool usage and observations. Solves context loss without manual `write_memory()` calls.
 
-**Why claude-mem matters**: Unlike manual memory tools (Serena's `write_memory()`), claude-mem **automatically captures everything** Claude does during sessions and intelligently injects relevant context when you reconnect. This solves the #1 pain point: context loss between sessions.
+| Feature | Value |
+|---------|-------|
+| Capture | Hooks into SessionStart, PostToolUse, Stop, SessionEnd |
+| Storage | SQLite + optional Chroma (port 8000 fallback: SQLite FTS) |
+| Worker | Bun process, port 37777, fail-open (dead worker never blocks work) |
+| Progressive disclosure | 3 layers: search (50-100 tokens) → timeline → full details |
+| Skills | `/mem-search`, `/smart-explore`, `/make-plan`, `/do`, `/timeline-report` |
+| Install | `/plugin marketplace add thedotmack/claude-mem` |
+| License | AGPL-3.0 + PolyForm Noncommercial (check for commercial use) |
+| Stars | 26.5K (v10.6.3, 2026-03-30) |
 
-**Key Features**:
+**Security warning**: `GET /api/settings` exposes API keys in plain text — set `host: "127.0.0.1"`, never `"0.0.0.0"`.
 
-| Feature | Description |
-|---------|-------------|
-| **Automatic capture** | Hooks into SessionStart, PostToolUse, Stop, SessionEnd lifecycle events |
-| **AI compression** | Uses Claude to generate semantic summaries (~10x token reduction) |
-| **Progressive disclosure** | 3-layer retrieval (search → timeline → observations) saves ~95% tokens |
-| **Hybrid search** | Full-text + vector search (Chroma) + natural language queries |
-| **Web dashboard** | Real-time UI at `http://localhost:37777` for exploring history |
-| **Privacy controls** | `<private>` tags to exclude sensitive content from storage |
+**Hook coexistence gotcha**: claude-mem installation overwrites existing `settings.json` hooks arrays. Back up before installing, then manually merge.
 
-**Architecture**:
+**Cost**: ~$5-15/month (heavy users). Switching compression model from Claude Haiku to Gemini 2.5 Flash saves ~86%.
+
+> **Full coverage**: See [Memory Systems: claude-mem](./core/memory-systems.md#31-claude-mem) for full architecture breakdown, observation types, progressive disclosure workflow, privacy controls, and cost comparison table.
+
+> **Source**: [GitHub: thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) (26.5K stars, AGPL-3.0)
+
+---DELETEME2---
 
 ```
 Session Lifecycle (hooks → worker → storage):
@@ -12865,407 +12875,83 @@ Documented in production at Pulumi (2026-03-03) across 6 test scenarios on a rea
 
 ### doobidoo Memory Service (Semantic Memory)
 
-> **⚠️ Status: Under Testing** - This MCP server is being evaluated. The documentation below is based on the official repository but hasn't been fully validated in production workflows yet. Feedback welcome!
+> **⚠️ Status: Under Testing** — Evaluated early 2026. MIT licensed, Python.
 
-**Purpose**: Persistent semantic memory with cross-session search and multi-client support.
+**Purpose**: Persistent semantic memory with cross-session search and multi-client support. Complements Serena (key-value) with meaning-based retrieval: `retrieve_memory("what did we decide about auth?")`.
 
-**Why doobidoo complements Serena**:
-- Serena: Key-value memory (`write_memory("key", "value")`) - requires knowing the key
-- doobidoo: Semantic search (`retrieve_memory("what did we decide about auth?")`) - finds by meaning
+| Feature | Value |
+|---------|-------|
+| Storage | SQLite-vec (default), Cloudflare D1+Vectorize, hybrid |
+| Tools | 12 MCP tools (store, retrieve, tag search, graph ops, health check) |
+| Multi-client | 13+ apps share `~/.mcp-memory-service/memories.db` |
+| Install | `pip install mcp-memory-service` |
+| Cross-device | Cloudflare backend required |
 
-| Feature | Serena | doobidoo |
-|---------|--------|----------|
-| Memory storage | Key-value | Semantic embeddings |
-| Search by meaning | No | Yes |
-| Multi-client | Claude only | 13+ apps |
-| Dashboard | No | Knowledge Graph |
-| Symbol indexation | Yes | No |
+**Known issues**: `busy_timeout=5000ms` default causes intermittent errors under concurrent access; fix with `MCP_MEMORY_SQLITE_PRAGMAS=busy_timeout=15000,cache_size=20000`.
 
-**Storage Backends**:
+> **Full coverage**: See [Memory Systems: doobidoo](./core/memory-systems.md#35-doobidoo-mcp-memory-service) for installation, configuration, storage backends, known issues, and comparison with Kairn/ICM.
 
-| Backend | Usage | Performance |
-|---------|-------|-------------|
-| `sqlite_vec` (default) | Local, lightweight | <10ms queries |
-| `cloudflare` | Cloud, multi-device sync | Edge performance |
-| `hybrid` | Local fast + cloud background sync | 5ms local |
-
-**Data Location**: `~/.mcp-memory-service/memories.db` (SQLite with vector embeddings)
-
-**MCP Tools Available** (12 unified tools):
-
-| Tool | Description |
-|------|-------------|
-| `store_memory` | Store with tags, type, metadata |
-| `retrieve_memory` | Semantic search (top-N by similarity) |
-| `search_by_tag` | Exact tag matching (OR/AND logic) |
-| `delete_memory` | Delete by content_hash |
-| `list_memories` | Paginated browsing with filters |
-| `check_database_health` | Stats, backend status, sync info |
-| `get_cache_stats` | Server performance metrics |
-| `memory_graph:connected` | Find connected memories |
-| `memory_graph:path` | Shortest path between memories |
-| `memory_graph:subgraph` | Subgraph around a memory |
-
-**Installation**:
-
-```bash
-# Quick install (local SQLite backend)
-pip install mcp-memory-service
-python -m mcp_memory_service.scripts.installation.install --quick
-
-# Team/Production install (more options)
-git clone https://github.com/doobidoo/mcp-memory-service.git
-cd mcp-memory-service
-python scripts/installation/install.py
-# → Choose: cloudflare or hybrid for multi-device sync
-```
-
-**Configuration** (add to MCP config):
-
-```json
-{
-  "mcpServers": {
-    "memory": {
-      "command": "memory",
-      "args": ["server"]
-    }
-  }
-}
-```
-
-**Configuration with environment variables** (for team/cloud sync):
-
-```json
-{
-  "mcpServers": {
-    "memory": {
-      "command": "memory",
-      "args": ["server"],
-      "env": {
-        "MCP_MEMORY_STORAGE_BACKEND": "hybrid",
-        "MCP_HTTP_ENABLED": "true",
-        "MCP_HTTP_PORT": "8000",
-        "CLOUDFLARE_API_TOKEN": "your-token",
-        "CLOUDFLARE_ACCOUNT_ID": "your-account-id"
-      }
-    }
-  }
-}
-```
-
-**Key Environment Variables**:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MCP_MEMORY_STORAGE_BACKEND` | `sqlite_vec` | Backend: sqlite_vec, cloudflare, hybrid |
-| `MCP_HTTP_ENABLED` | `true` | Enable dashboard server |
-| `MCP_HTTP_PORT` | `8000` | Dashboard port |
-| `MCP_OAUTH_ENABLED` | `false` | Enable OAuth for team auth |
-| `MCP_HYBRID_SYNC_INTERVAL` | `300` | Sync interval in seconds |
-
-**Usage**:
-
-```
-# Store a decision with tags
-store_memory("We decided to use FastAPI for the REST API", tags=["architecture", "api"])
-
-# Semantic search (finds by meaning, not exact match)
-retrieve_memory("what framework for API?")
-→ Returns: "We decided to use FastAPI..." with similarity score
-
-# Search by tag
-search_by_tag(["architecture"])
-
-# Check health
-check_database_health()
-```
-
-**Multi-Client Sync**:
-
-```
-# Same machine: all clients share ~/.mcp-memory-service/memories.db
-Claude Code ──┐
-Cursor ───────┼──► Same SQLite file
-VS Code ──────┘
-
-# Multi-device: use Cloudflare backend
-Device A ──┐
-Device B ──┼──► Cloudflare D1 + Vectorize
-Device C ──┘
-```
-
-**When to use which**:
-- **Serena**: Symbol navigation, code indexation, key-value memory with known keys
-- **doobidoo**: Cross-session decisions, "what did we decide about X?", multi-IDE sharing
-
-**Dashboard**: Access at http://localhost:8000 after starting the server.
-
-> **Source**: [doobidoo/mcp-memory-service GitHub](https://github.com/doobidoo/mcp-memory-service) (791 stars, v10.0.2)
+> **Source**: [doobidoo/mcp-memory-service GitHub](https://github.com/doobidoo/mcp-memory-service) (~1.6K stars, v10.0.2)
 
 ### Kairn: Knowledge Graph Memory with Biological Decay
 
-> **⚠️ Status: Under Testing** - Evaluated Feb 2026. MIT licensed, Python 100%. Feedback welcome!
+> **⚠️ Status: Under Testing** — Evaluated Feb 2026. MIT licensed, Python.
 
-**Purpose**: Long-term project memory organized as a knowledge graph with automatic decay — stale information expires on its own, preventing context pollution.
+**Purpose**: Long-term project memory as a knowledge graph with automatic biological decay — stale info expires without manual cleanup.
 
-**Key differentiators vs doobidoo/Serena**:
-- **Typed relationships**: `depends-on`, `resolves`, `causes` — captures causality, not just content
-- **Biological decay model**: solutions persist ~200 days, workarounds ~50 days — auto-pruning without `delete_memory` calls
-- **18 MCP tools**: graph ops, project tracking, experience management, intelligence layer (full-text search, confidence routing, cross-workspace patterns)
+| Feature | Value |
+|---------|-------|
+| Typed relationships | `depends-on`, `resolves`, `causes` |
+| Decay model | Solutions ~200 days, workarounds ~50 days |
+| Tools | 18 MCP tools (graph ops, search, cross-workspace patterns) |
+| Install | `pip install kairn` |
 
-| Feature | Serena | doobidoo | Kairn |
-|---------|--------|----------|-------|
-| Storage model | Key-value | Semantic embeddings | Knowledge graph |
-| Memory decay / auto-expiry | No | No | Yes (biological) |
-| Typed relationships | No | Tags only | depends-on / resolves / causes |
-| Full-text search | No | Yes | Yes |
-| Auto-pruning stale info | No | No | Yes |
+Use Kairn when causality matters ("this breaks *because* of that") or when long-running projects accumulate stale workarounds that need auto-pruning.
 
-**When Kairn makes sense**:
-- Long-running projects where workarounds from months ago become noise
-- When causality matters: "this breaks *because* of that", "this fix *resolves* that bug"
-- Teams wanting automatic knowledge hygiene without manual cleanup
+> **Full coverage**: See [Memory Systems: Kairn](./core/memory-systems.md#34-kairn) for full feature breakdown, decay model details, and comparison with doobidoo/ICM.
 
-**MCP Config**:
-
-```json
-"kairn": {
-  "command": "python",
-  "args": ["-m", "kairn", "serve"],
-  "description": "Knowledge graph memory with biological decay"
-}
-```
-
-**Install**:
-
-```bash
-pip install kairn
-# or from source:
-git clone https://github.com/kairn-ai/kairn && cd kairn && pip install -e .
-```
-
-> **Source**: [kairn-ai/kairn GitHub](https://github.com/kairn-ai/kairn) (MIT, Python 100%)
+> **Source**: [kairn-ai/kairn GitHub](https://github.com/kairn-ai/kairn) (MIT, Python)
 
 ### ICM: Dual Memory Architecture (Rust Binary, Zero Dependencies)
 
-> **⚠️ Status: Under Testing** — Evaluated March 2026. Source-Available license (free for individuals and teams ≤20). From the rtk-ai team (same authors as RTK). Benchmarks below are vendor-reported and unverified independently. Feedback welcome!
+> **⚠️ Status: Under Testing** — Evaluated March 2026. Source-Available license (free for individuals and teams ≤20). Benchmarks are vendor-reported, unverified independently.
 
-**Purpose**: Persistent memory for AI agents combining episodic decay (Memories) and permanent knowledge graph (Memoirs) in a single zero-dependency Rust binary.
+**Purpose**: Persistent memory combining episodic decay (Memories) and permanent knowledge graph (Memoirs) in a single zero-dependency Rust binary.
 
-**When ICM makes sense over Kairn/doobidoo**:
-- Python dependency management is a friction point (CI environments, sandboxed machines)
-- You want Homebrew install with no Python env setup
-- You need both decay-based episodic memory and a permanent knowledge graph in one tool
-- You use multiple editors (14 clients supported: Claude Code, Cursor, VS Code, Windsurf, Zed, Amp, Cline, Roo Code, OpenAI Codex CLI, and more)
+| Feature | Value |
+|---------|-------|
+| Install | `brew tap rtk-ai/tap && brew install icm` |
+| Modes | MCP (31 tools) / Hook (zero explicit calls) / Skills (/recall, /remember) |
+| Dual architecture | Memories (configurable decay) + Memoirs (permanent typed graph, 9 relation types) |
+| Hybrid search | BM25 30% + vector 70%, hybrid latency ~951 µs/op |
+| Auto-extraction | Three layers: pattern hooks, pre-compaction, session-start |
+| Cross-IDE | 14 clients (Claude Code, Cursor, VS Code, Windsurf, Zed, Amp, Cline, Roo Code...) |
+| License | Source-Available — free for teams ≤20, enterprise required above |
 
-**Key differentiators vs Kairn/doobidoo**:
-- **Single Rust binary**: no Python, no pip, no virtual env — `brew install icm` and done
-- **Dual architecture in one tool**: Memories (decay, episodic) + Memoirs (permanent, typed graph) — Kairn covers the graph layer, doobidoo the semantic layer, ICM covers both
-- **Auto-extraction**: three-layer automatic capture (pattern hooks, pre-compaction, session-start) without explicit `store_memory` calls
-- **Auto-deduplication**: blocks entries with >85% similarity to existing content
+**Critical setup note**: `icm init --mode hook` ships the hook file but does NOT register it in `settings.json`. Add manually:
 
-| Feature | doobidoo | Kairn | ICM |
-|---------|----------|-------|-----|
-| Language | Python | Python | Rust (single binary) |
-| Install | pip | pip | Homebrew / curl |
-| Episodic decay | No | Yes (biological) | Yes (configurable rates) |
-| Permanent knowledge graph | No | Yes | Yes (Memoirs) |
-| Auto-extraction | No | No | Yes (3 layers) |
-| Hybrid search | Semantic | Full-text + semantic | BM25 30% + vector 70% |
-| License | MIT | MIT | Source-Available |
-
-**Memoir relation types** (9): `part_of`, `depends_on`, `related_to`, `contradicts`, `refines`, `alternative_to`, `caused_by`, `instance_of`, `superseded_by`
-
-**Installation**:
-
-```bash
-# Homebrew (recommended)
-brew tap rtk-ai/tap && brew install icm
-
-# Quick install
-curl -fsSL https://raw.githubusercontent.com/rtk-ai/icm/main/install.sh | sh
-
-# From source
-cargo install --path crates/icm-cli
+```json
+{"hooks": {"PostToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": "~/.claude/hooks/icm-post-tool.sh"}]}]}}
 ```
 
-**Setup** (3 separate modes, not a single interactive command):
-
-```bash
-# Step 1: MCP server → auto-injects into ~/.claude.json (and 13 other editors)
-icm init --mode mcp
-
-# Step 2: PostToolUse hook → auto-extracts context every N tool calls
-icm init --mode hook
-
-# Step 3: /recall and /remember slash commands
-icm init --mode skill
-```
-
-Restart Claude Code after running all three.
-
-**Usage**:
-
-```bash
-# Store episodic memory (importance = critical|high|medium|low, not a float)
-icm store --topic "my-project" --content "Use PostgreSQL for main DB" --importance high
-
-# Recall with hybrid search
-icm recall "database choice"
-
-# Build permanent knowledge graph
-icm memoir create -n "system-architecture"
-icm memoir add-concept -m "system-architecture" -n "auth-service"
-icm memoir link -m "system-architecture" --from "api-gateway" --to "auth-service" -r depends-on
-
-# Session management
-icm stats      # memory count, topics, avg weight
-icm topics     # list all topics
-icm decay      # apply temporal decay manually
-icm prune      # remove low-weight entries
-```
-
-**Onboarding prompt**: a ready-to-use session starter template is available at `examples/memory/icm-session-starter.md`.
-
-**Performance** (1000 ops, 384d embeddings — vendor-reported):
-
-| Operation | Latency |
-|-----------|---------|
-| Store (no embeddings) | 34.2 µs/op |
-| Store (with embeddings) | 51.6 µs/op |
-| FTS5 full-text search | 46.6 µs/op |
-| Vector search (KNN) | 590.0 µs/op |
-| Hybrid search | 951.1 µs/op |
-
-**Agent efficiency claims** (vendor-reported, Haiku model, unverified independently):
-- Session 2: 29% fewer turns, 17% cost reduction
-- Session 3: 40% fewer turns, 22% cost reduction
-
-> ⚠️ **License note**: Free for individuals and teams of up to 20 people. Enterprise license required above that threshold. Verify your organization's size before deploying. Contact: license@rtk.ai
+> **Full coverage**: See [Memory Systems: ICM](./core/memory-systems.md#33-icm-infinite-context-memory) for full architecture breakdown, Memoir relation types, benchmarks, and comparison with Kairn/doobidoo.
 
 > **Source**: [rtk-ai/icm GitHub](https://github.com/rtk-ai/icm) (52 stars, Source-Available)
 
 ### MCP Memory Stack: Complementarity Patterns
 
-> **⚠️ Experimental** - These patterns combine multiple MCP servers. Test in your workflow before relying on them.
+The four tools serve orthogonal roles in a layered knowledge stack:
 
-**The 4-Layer Knowledge Stack**:
+| Layer | Tool | Question answered |
+|-------|------|-------------------|
+| Business context | doobidoo | "Why did we do this?" |
+| Code structure | Serena | "Where is X defined?" |
+| Code by intent | grepai | "Find code that does X" |
+| Library docs | Context7 | "How to use library X?" |
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    KNOWLEDGE LAYER                   │
-├─────────────────────────────────────────────────────┤
-│  doobidoo     │ Decisions, ADRs, business context   │
-│  (semantic)   │ "Why did we do this?"               │
-├───────────────┼─────────────────────────────────────┤
-│  Serena       │ Symbols, structure, key-value memory│
-│  (code index) │ "Where is X defined?"               │
-├───────────────┼─────────────────────────────────────┤
-│  grepai       │ Semantic code search + call graph   │
-│  (code search)│ "Find code that does X"             │
-├───────────────┼─────────────────────────────────────┤
-│  Context7     │ Official library documentation      │
-│  (docs)       │ "How to use library X?"             │
-└─────────────────────────────────────────────────────┘
-```
+Combination workflows: `retrieve_memory()` for business context, `grepai search` to find code, `find_symbol()` for exact location.
 
-**Comparison Matrix**:
-
-| Capability | Serena | grepai | doobidoo | Kairn | ICM |
-|------------|--------|--------|----------|-------|-----|
-| Cross-session memory | Key-value | No | Semantic | Knowledge graph | Episodic + graph |
-| Cross-IDE memory | No | No | Yes | Yes | Yes (14 clients) |
-| Cross-device sync | No | No | Yes (Cloudflare) | No | No |
-| Knowledge Graph | No | Call graph | Decision graph | Typed relationships | Typed relationships |
-| Fuzzy search | No | Code | Memory | Full-text + semantic | BM25 + vector hybrid |
-| Tags/categories | No | No | Yes | Yes | Yes (topics) |
-| Memory decay / auto-expiry | No | No | No | Yes (biological) | Yes (configurable) |
-| Auto-extraction | No | No | No | No | Yes (3 layers) |
-| Runtime | — | — | Python | Python | Rust (single binary) |
-| License | MIT | MIT | MIT | MIT | Source-Available (≤20 free) |
-
-**Usage Patterns**:
-
-| Pattern | Tool | Example |
-|---------|------|---------|
-| **Decision taken** | doobidoo | `store_memory("Decision: FastAPI because async + OpenAPI", tags=["decision", "api"])` |
-| **Convention established** | doobidoo | `store_memory("Convention: snake_case for Python", tags=["convention"])` |
-| **Bug resolved** | doobidoo | `store_memory("Bug: token TTL mismatch Redis/JWT. Fix: align TTL+60s", tags=["bug", "auth"])` |
-| **WIP warning** | doobidoo | `store_memory("WIP: refactoring AuthService, don't touch", tags=["wip"])` |
-| **Find symbol** | Serena | `find_symbol("PaymentProcessor")` |
-| **Find callers** | grepai | `grepai trace callers "validateToken"` |
-| **Search by intent** | grepai | `grepai search "authentication logic"` |
-| **Library docs** | Context7 | `resolve-library-id("fastapi")` |
-
-**Combined Workflows**:
-
-```
-# Workflow 1: Understanding a feature
-retrieve_memory("payment module status?")        # doobidoo → business context
-grepai search "payment processing"               # grepai → find code
-find_symbol("PaymentProcessor")                  # Serena → exact location
-
-# Workflow 2: Onboarding (Session 1 → Session N)
-# Session 1 (senior dev)
-store_memory("Architecture: hexagonal with ports/adapters", tags=["onboarding"])
-store_memory("Tests in __tests__/, using Vitest", tags=["onboarding", "testing"])
-store_memory("DANGER: never touch legacy/payment.ts without review", tags=["onboarding", "danger"])
-
-# Session N (new dev)
-retrieve_memory("project architecture?")
-retrieve_memory("where are tests?")
-retrieve_memory("dangerous areas?")
-
-# Workflow 3: ADR (Architecture Decision Records)
-store_memory("""
-ADR-001: FastAPI vs Flask
-- Decision: FastAPI
-- Reason: native async, auto OpenAPI, typing
-- Rejected: Flask (sync), Django (too heavy)
-""", tags=["adr", "api"])
-
-# 3 months later
-retrieve_memory("why FastAPI?")
-
-# Workflow 4: Debug context persistence
-store_memory("Auth bug: Redis TTL expires before JWT", tags=["debug", "auth"])
-store_memory("Fix: align Redis TTL = JWT exp + 60s margin", tags=["debug", "auth", "fix"])
-
-# Same bug reappears months later
-retrieve_memory("auth token redis problem")
-→ Finds the fix immediately
-
-# Workflow 5: Multi-IDE coordination
-# In Claude Code (terminal)
-store_memory("Refactoring auth in progress, don't touch AuthService", tags=["wip"])
-
-# In Cursor (another window)
-retrieve_memory("work in progress?")
-→ Sees the warning
-```
-
-**When to use which memory system**:
-
-| Need | Tool | Why |
-|------|------|-----|
-| "I know the exact key" | Serena `read_memory("api_choice")` | Fast, direct lookup |
-| "I remember the topic, not the key" | doobidoo `retrieve_memory("API decision?")` | Semantic search |
-| "Share across IDEs" | doobidoo | Multi-client support |
-| "Share across devices" | doobidoo + Cloudflare | Cloud sync |
-| "Code symbol location" | Serena `find_symbol()` | Code indexation |
-| "Code by intent" | grepai `search()` | Semantic code search |
-| "Long-term project memory, auto-expiry" | Kairn | Biological decay model |
-| "Why did X break / what resolved Y?" | Kairn | Typed relationships (resolves, causes) |
-
-**Current Limitations** (doobidoo):
-
-| Limitation | Impact | Workaround |
-|------------|--------|------------|
-| No versioning | Can't see decision history | Include dates in content |
-| No permissions | Anyone can modify | Use separate DBs per team |
-| No source linking | No link to file/line | Include file refs in content |
-| No expiration | Stale memories persist | Manual cleanup with `delete_memory` OR use Kairn (auto-decay) |
-| No git integration | No branch-aware memory | Tag with branch name |
+> **Full coverage**: See [Memory Systems: Architecture Patterns](./core/memory-systems.md#6-architecture-patterns) and [Master Comparison Table](./core/memory-systems.md#38-master-comparison-table) for the complete 20-tool matrix, combined workflows, multi-agent patterns, and decision flowchart.
 
 ---
 
