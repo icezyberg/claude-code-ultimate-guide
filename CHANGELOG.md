@@ -10,9 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **MCP vs CLI guide updated (`guide/ecosystem/mcp-vs-cli.md`)**: Three additions. (1) "Per-server recommendation" table: 18 popular MCP servers each with a concrete verdict (Use MCP / Use CLI / Depends), the named CLI alternative, and a one-line reason. Services with mature CLIs the model knows from training (GitHub, GitLab, git, docker, aws-cli, terraform, semgrep, filesystem) lean CLI. Services requiring OAuth or with no CLI (Sentry, Slack, Notion, Google Drive, Figma, Linear, Context7) lean MCP. Playwright and Kubernetes are context-dependent. Includes a callout linking to the interactive quiz at cc.bruniaux.com/mcp-or-cli/. (2) "MCP vs Skills" section clarifying that skills (markdown workflow instructions) and MCP (execution/auth connectivity) address different layers, not alternatives. OAuth 2.1 subsection explains why MCP is the only option for enterprise SaaS APIs that require browser redirects or server-held refresh tokens. (3) Updated mcp2cli Tooling table entry from watch-list status (1.2K stars, 8 days old) to current state (~1.9K stars, Show HN Best of March 2026, independently benchmarked by Firecrawl/Scalekit/CircleCI). Updated "Last updated" date. Added `mcp-vs-cli.md` pointer block to `machine-readable/reference.yaml` (8 new entries). Added `third_party_mcp2cli_evaluation` and `third_party_mcp2cli_score` to `reference.yaml` (2 previously missing entries).
 
-- **Claude Code Releases**: Updated tracking to v2.1.148
-  - v2.1.147: Pinned background sessions (Ctrl+T in claude agents), /code-review --comment for inline GitHub PR comments, improved auto-updater with retry/error reporting, 30+ bug fixes (prompt history duplicates, PowerShell hook if-conditions, pasted text placeholder, plugin component counts doubled)
-  - v2.1.148: Hotfix for Bash tool returning exit code 127 regression from 2.1.147
+- **Claude Code Releases**: Updated tracking to v2.1.150
+  - v2.1.149: `/usage` per-category breakdown (skills, subagents, plugins, per-MCP-server cost), GFM task list checkboxes render natively, Enterprise `allowAllClaudeAiMcps` setting, two security fixes (PowerShell `cd` permission bypass, sandbox worktree write allowlist), 20+ bug fixes (`/diff` keyboard scrolling, transcript view freeze, slash-command arg hints, `/config` phantom changes, `/insights` crash, otelHeadersHelper path-with-spaces)
+  - v2.1.150: Internal infrastructure improvements (no user-facing changes)
 
 ### Added
 
