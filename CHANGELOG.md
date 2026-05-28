@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Broken URLs corrected across 11 files**: `florian.bruniaux.com/guides` replaced with `cc.bruniaux.com/whitepapers/` in `docs/for-cto.md`, `llms.txt`, `machine-readable/llms.txt`, `machine-readable/reference.yaml`, `mcp-server/content/llms.txt`, `mcp-server/content/reference.yaml`, `CLAUDE.md`, `AGENTS.md`. Also fixed `quiz.html` → `/quiz/` and `cheatsheet.html` → `/cheatsheet/` in all three `llms.txt` files (no Vercel redirect existed for those `.html` paths).
+
 ### Documentation
 
 - **Claude Code Releases**: Updated tracking to v2.1.153 (2026-05-28)
