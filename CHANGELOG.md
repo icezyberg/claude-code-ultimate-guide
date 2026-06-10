@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Updated fast-mode references from "6x price" to "2x price" (verified for Opus 4.8) and corrected the `/fast` cheatsheet entry.
 - Marked Opus 4.8 standard pricing as "see official docs" (no published rate); kept 4.6/4.7 rows as previous-generation reference.
 - Updated effort API code example (`guide/ultimate-guide.md` §11.1) from `claude-opus-4-7` to `claude-opus-4-8`.
+- Added "Escalating to Fable 5" mini-section at §2.5 (model selection guide): decision trigger, practical scenarios, access command, and pricing note.
 
 ### Security
 

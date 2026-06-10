@@ -3499,10 +3499,21 @@ _Quick jump:_ [Decision Table](#decision-table) · [Effort Levels](#effort-level
 | System architecture | Opus | high | ~$1.25 |
 | Critical security audit | Opus | max | ~$2+ |
 | Multi-agent orchestration | Sonnet + Haiku | mixed | variable |
+| Tasks where Opus 4.8 at max is insufficient | Fable 5 | max | See official docs |
 
-> **Note on costs**: Estimates based on API pricing (Haiku $0.80/$4.00 per MTok, Sonnet $3/$15, Opus $5/$25). Pro/Max subscribers pay a flat rate, so prioritize quality over cost. See [Section 2.2](#cost-awareness--optimization) for full pricing breakdown.
+> **Note on costs**: Estimates based on API pricing (Haiku $0.80/$4.00 per MTok, Sonnet $3/$15, Opus $5/$25). Pro/Max subscribers pay a flat rate, so prioritize quality over cost. Fable 5 pricing unpublished; check [anthropic.com/pricing](https://www.anthropic.com/pricing). See [Section 2.2](#cost-awareness--optimization) for full pricing breakdown.
 >
-> **Budget modifier** (Teams Standard/Pro): downgrade one tier per phase — use Sonnet where the table says Opus, Haiku where it says Sonnet for mechanical implementation tasks. Community pattern: *Sonnet for Plan → Haiku for Implementation* on a $25/mo Teams Standard plan.
+> **Budget modifier** (Teams Standard/Pro): downgrade one tier per phase (use Sonnet where the table says Opus, Haiku where it says Sonnet for mechanical implementation tasks). Community pattern: *Sonnet for Plan → Haiku for Implementation* on a $25/mo Teams Standard plan.
+
+#### Escalating to Fable 5
+
+Claude Fable 5 (`claude-fable-5`, Mythos-class, available from Claude Code v2.1.170) exceeds the capabilities of any previously GA Anthropic model. In practice, use it when Opus 4.8 at `max` effort is not meeting your quality bar.
+
+Decision trigger: you ran the task on Opus with `max` effort and the output is not good enough for a critical or irreversible decision. Fable 5 is not a default. Cost is unpublished; check [anthropic.com/pricing](https://www.anthropic.com/pricing). Reserve it for tasks where output quality matters more than budget.
+
+Practical scenarios: production security audits where errors are unacceptable, architecture decisions with lasting consequences, or multi-step agentic work where Opus alone has fallen short.
+
+**Access**: `/model claude-fable-5` (v2.1.170+). [Announcement](https://www.anthropic.com/news/claude-fable-5-mythos-5)
 
 ---
 
