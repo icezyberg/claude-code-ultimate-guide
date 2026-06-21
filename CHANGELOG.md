@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **llms.txt / llms-full.txt / machine-readable/llms.txt stats sync** (3 files): updated Last Updated to June 21 2026, Lines of Documentation from 26,058 to 26,494 (reflects current ultimate-guide.md line count), Production Templates from 314 to 262 (authoritative count from check-landing-sync.sh method), and inline body references in llms-full.txt (FAQ answer, repo structure, What Is section).
+
 - **Practitioner insights from IFTTD podcast** (`guide/ecosystem/practitioner-insights.md`): new file consolidating paraphrased field insights from 11 IFTTD episodes (290-361), organized into 5 themes: context engineering, agentic patterns and orchestration, LLM evaluation, agent security, and DevX and adoption. 22 attributed insights from practitioners including Guillaume Laforge (Google Cloud), Zineb Bendhiba (Red Hat), Frédéric Barthelet (Theodo), Samy Lastmann (Arago), Jocelyn N'takpe (ManoMano), and others. All French content reformulated in English with attribution format: name, role, company, episode number, ifttd.io URL. No direct quotes.
 
 - **Semantic chunking and synthetic question generation** (`guide/ecosystem/context-engineering-tools.md`, new subsection "Query-Side Indexing"): practical explanation of semantic chunking (boundary detection over fixed-token splitting) and synthetic question generation at index time (doc2query: Nogueira and Lin, 2019; HyDE: Gao et al., 2022). Retrieval improvement framed as Laforge's practitioner order-of-magnitude estimate, not a constant. Attributed to Guillaume Laforge (IFTTD ep 361).
